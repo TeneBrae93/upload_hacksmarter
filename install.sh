@@ -17,7 +17,7 @@ echo "=========================================="
 # 1. Update and install system dependencies
 echo "[*] Installing system dependencies..."
 apt-get update
-apt-get install -y python3-pip python3-venv nginx python3-dev build-essential libjpeg-dev zlib1g-dev
+apt-get install -y python3-pip python3-venv nginx python3-dev build-essential libjpeg-dev zlib1g-dev certbot python3-certbot-nginx
 
 # 2. Setup Application Directory
 echo "[*] Setting up application directory..."
@@ -144,3 +144,22 @@ else
 fi
 echo "Default admin user is '$ADMIN_USERNAME' with the password you provided."
 echo "=========================================="
+
+if [ "$DOMAIN_NAME" != "_" ]; then
+    echo ""
+    echo "=========================================="
+    echo "SSL/TLS Configuration (Optional)"
+    echo "=========================================="
+    echo "If your DNS A record is already fully propagated and pointing to $SERVER_IP,"
+    echo "we can automatically secure your site with an SSL certificate right now."
+    read -p "Has DNS propagated? Run Certbot now? (y/N): " RUN_CERTBOT
+    if [[ "$RUN_CERTBOT" =~ ^[Yy]$ ]]; then
+        certbot --nginx -d $DOMAIN_NAME --non-interactive --agree-tos -m admin@$DOMAIN_NAME --redirect
+        echo "[*] SSL configured successfully! You can access the app securely at https://$DOMAIN_NAME/"
+    else
+        echo "[*] Skipping SSL setup."
+        echo "When your DNS is ready, run this command manually:"
+        echo "certbot --nginx -d $DOMAIN_NAME --redirect"
+    fi
+    echo "=========================================="
+fi
