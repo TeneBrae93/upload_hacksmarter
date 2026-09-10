@@ -26,11 +26,11 @@ echo "[*] Copying updated files to $APP_DIR..."
 # Copy files, overwriting old ones, but ignoring .git and preserving existing .env/instance files in the destination
 rsync -a --exclude='.git' --exclude='instance' --exclude='venv' --exclude='.env' ./ $APP_DIR/
 
+echo "[*] Updating Python dependencies..."
+$VENV_DIR/bin/pip install -r $APP_DIR/requirements.txt
+
 echo "[*] Ensuring correct ownership..."
 chown -R $USER:$USER $APP_DIR
-
-echo "[*] Updating Python dependencies..."
-sudo -u $USER bash -c "$VENV_DIR/bin/pip install -r $APP_DIR/requirements.txt"
 
 echo "[*] Restarting application service..."
 systemctl restart ova-to-ami

@@ -24,6 +24,7 @@ echo "[*] Setting up application directory..."
 mkdir -p $APP_DIR
 mkdir -p $APP_DIR/instance
 cp -r ./* $APP_DIR/
+rm -rf $APP_DIR/venv $APP_DIR/__pycache__
 chown -R $USER:$USER $APP_DIR
 
 # 3. Prompt for AWS Credentials
@@ -64,8 +65,12 @@ chmod 600 $APP_DIR/.env
 
 # 4. Setup Python Virtual Environment
 echo "[*] Setting up Python virtual environment..."
-sudo -u $USER bash -c "python3 -m venv $VENV_DIR"
-sudo -u $USER bash -c "$VENV_DIR/bin/pip install -r $APP_DIR/requirements.txt"
+rm -rf $VENV_DIR # Ensure completely fresh venv
+python3 -m venv $VENV_DIR
+$VENV_DIR/bin/pip install -r $APP_DIR/requirements.txt || { echo "Pip install failed"; exit 1; }
+
+# Ensure permissions are correct after pip install
+chown -R $USER:$USER $APP_DIR
 
 # 5. Create Systemd Service for Gunicorn
 echo "[*] Configuring Systemd Service..."
