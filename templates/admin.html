@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel mb-4">
+    <h2>Admin: User Management</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Create new accounts for team members.</p>
+    
+    <form method="POST" action="{{ url_for('create_user') }}" style="max-width: 400px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group">
+            <label for="username">New Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Initial Password</label>
+            <input type="text" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn">Create User</button>
+    </form>
+</div>
+
+<div class="glass-panel">
+    <h2>Existing Users</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>MFA Enabled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ 'Admin' if user.is_admin else 'User' }}</td>
+                    <td>
+                        {% if user.mfa_enabled %}
+                        <span class="badge completed">Yes</span>
+                        {% else %}
+                        <span class="badge pending">No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex justify-center items-center h-screen" style="margin-top: -10vh;">
+    <div class="glass-panel" style="width: 100%; max-width: 400px;">
+        <div class="text-center mb-4">
+            <h2>Two-Factor Authentication</h2>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Enter the 6-digit code from your authenticator app.</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('verify_mfa') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <input type="text" id="token" name="token" required autofocus autocomplete="off" maxlength="6" pattern="\d{6}" style="text-align: center; letter-spacing: 0.5rem; font-size: 1.5rem;">
+            </div>
+            <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Verify</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel mb-4">
+    <h2>Upload New OVA</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Select an OVA file to upload. It will be converted into an AMI and shared automatically.</p>
+    
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <p>Drag and drop your OVA file here or click to browse</p>
+        <input type="file" id="file-input" accept=".ova" onchange="handleFileSelect(event)">
+    </div>
+    
+    <div class="progress-container" id="progress-container">
+        <p id="upload-filename" style="margin-bottom: 0.5rem; font-weight: 500;"></p>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <div class="progress-status">
+            <span id="status-text">Uploading to S3...</span>
+            <span id="progress-percent">0%</span>
+        </div>
+    </div>
+</div>
+
+<div class="glass-panel">
+    <h2>Previous Uploads</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>AMI ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for upload in uploads %}
+                <tr>
+                    <td>{{ upload.filename }}</td>
+                    <td>{{ upload.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td><span class="badge {{ upload.status }}">{{ upload.status|capitalize }}</span></td>
+                    <td>{{ upload.ami_id if upload.ami_id else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center" style="color: var(--text-secondary);">No uploads found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}
