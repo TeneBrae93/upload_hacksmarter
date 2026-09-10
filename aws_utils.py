@@ -49,9 +49,8 @@ def generate_presigned_post(s3_client, bucket_name, object_name):
     response = s3_client.generate_presigned_post(
         bucket_name,
         object_name,
-        Fields={"acl": "private"},
+        Fields=None,
         Conditions=[
-            {"acl": "private"},
             ["starts-with", "$key", ""]
         ],
         ExpiresIn=3600
