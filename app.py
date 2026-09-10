@@ -13,6 +13,7 @@ from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+from sqlalchemy.exc import IntegrityError
 
 from models import db, User, UploadTask
 from aws_utils import (
@@ -59,15 +60,18 @@ with app.app_context():
     admin_pass = os.environ.get('ADMIN_PASSWORD')
     
     if admin_user and admin_pass:
-        if not User.query.filter_by(username=admin_user).first():
-            admin = User(
-                username=admin_user,
-                password_hash=generate_password_hash(admin_pass),
-                is_admin=True,
-                must_change_password=True
-            )
-            db.session.add(admin)
-            db.session.commit()
+        try:
+            if not User.query.filter_by(username=admin_user).first():
+                admin = User(
+                    username=admin_user,
+                    password_hash=generate_password_hash(admin_pass),
+                    is_admin=True,
+                    must_change_password=True
+                )
+                db.session.add(admin)
+                db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
 
 @app.route('/')
 def index():
