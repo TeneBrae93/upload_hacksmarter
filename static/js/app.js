@@ -205,9 +205,10 @@ function pollStatus(taskId) {
                 document.getElementById('status-text').style.color = 'var(--danger)';
                 document.getElementById('progress-bar').style.background = 'var(--danger)';
             } else if (data.status === 'importing') {
-                document.getElementById('status-text').textContent = `AWS Importing: ${data.aws_status || 'Processing'} (${data.progress || '0'}%)`;
-                document.getElementById('progress-bar').style.width = '100%';
-                document.getElementById('progress-percent').textContent = '';
+                const progress = data.progress || '0';
+                document.getElementById('status-text').textContent = `AWS Importing: ${data.aws_status || 'Processing'}`;
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-percent').textContent = progress + '%';
                 // Optional pulsating effect
                 document.getElementById('progress-bar').style.animation = 'pulse 2s infinite';
             }
@@ -216,4 +217,29 @@ function pollStatus(taskId) {
             console.error('Polling error', err);
         }
     }, 15000); // Check every 15 seconds
+}
+
+async function deleteUpload(taskId) {
+    if (!confirm('Are you sure you want to delete this upload? This will completely deregister the AMI and delete all AWS snapshots and data.')) {
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/api/upload/${taskId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        if (res.ok) {
+            const row = document.getElementById(`upload-row-${taskId}`);
+            if (row) row.remove();
+        } else {
+            const data = await res.json();
+            alert(`Error: ${data.error || 'Failed to delete upload'}`);
+        }
+    } catch (err) {
+        alert('Network error while deleting upload.');
+    }
 }
