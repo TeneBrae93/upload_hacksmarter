@@ -160,7 +160,7 @@ def update_password():
             flash('New passwords do not match.', 'danger')
         elif len(new_password) < 8:
             flash('New password must be at least 8 characters long.', 'danger')
-        elif not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token):
+        elif not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token.strip(), valid_window=1):
             flash('Invalid MFA code.', 'danger')
         else:
             current_user.password_hash = generate_password_hash(new_password)
@@ -241,7 +241,7 @@ def verify_mfa():
     if request.method == 'POST':
         token = request.form.get('token')
         totp = pyotp.TOTP(user.mfa_secret)
-        if totp.verify(token):
+        if totp.verify(token.strip(), valid_window=1):
             login_user(user)
             session.pop('pre_mfa_user_id', None)
             return redirect(url_for('dashboard'))
@@ -303,8 +303,8 @@ def promote_user(user_id):
     if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
         
-    mfa_token = request.form.get('mfa_token')
-    if not current_user.mfa_secret or not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token):
+    mfa_token = request.form.get('mfa_token', '').strip()
+    if not current_user.mfa_secret or not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token, valid_window=1):
         flash('Invalid MFA Token', 'danger')
         return redirect(url_for('admin'))
         
@@ -324,8 +324,8 @@ def delete_user(user_id):
     if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
         
-    mfa_token = request.form.get('mfa_token')
-    if not current_user.mfa_secret or not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token):
+    mfa_token = request.form.get('mfa_token', '').strip()
+    if not current_user.mfa_secret or not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token, valid_window=1):
         flash('Invalid MFA Token', 'danger')
         return redirect(url_for('admin'))
         
