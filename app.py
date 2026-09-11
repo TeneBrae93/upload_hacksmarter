@@ -19,7 +19,8 @@ from models import db, User, UploadTask
 from aws_utils import (
     get_clients, create_temp_bucket, generate_presigned_post,
     create_iam_role_and_policy, start_import_task, check_import_status,
-    share_resources, cleanup_bucket
+    share_resources, cleanup_bucket,
+    create_multipart_upload, generate_presigned_part_url, complete_multipart_upload
 )
 
 load_dotenv()
@@ -297,24 +298,20 @@ def create_user():
 
 # --- API Routes for Upload Flow ---
 
-@app.route('/api/upload/prepare', methods=['POST'])
+@app.route('/api/upload/multipart/create', methods=['POST'])
 @login_required
-def prepare_upload():
+def multipart_create():
     try:
         filename = secure_filename(request.json.get('filename'))
         s3_client, iam_client, ec2_client = get_clients()
         
-        # 1. Create a temporary bucket for this upload
         bucket_name = create_temp_bucket(s3_client)
         s3_key = f"uploads/{uuid.uuid4()}-{filename}"
         
-        # 2. Setup IAM Role for the import process early (takes time to propagate)
         create_iam_role_and_policy(iam_client, bucket_name)
         
-        # 3. Generate presigned URL for direct browser upload
-        presigned_data = generate_presigned_post(s3_client, bucket_name, s3_key)
+        upload_id = create_multipart_upload(s3_client, bucket_name, s3_key)
         
-        # 4. Create DB record
         task = UploadTask(
             filename=filename,
             s3_bucket=bucket_name,
@@ -324,13 +321,45 @@ def prepare_upload():
         db.session.commit()
         
         return jsonify({
-            'presigned_data': presigned_data,
+            'upload_id': upload_id,
             'task_id': task.id,
             's3_key': s3_key,
             'bucket_name': bucket_name
         })
     except Exception as e:
-        print(f"Error preparing upload: {e}")
+        print(f"Error creating multipart: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/upload/multipart/sign', methods=['POST'])
+@login_required
+def multipart_sign():
+    try:
+        bucket_name = request.json.get('bucket_name')
+        s3_key = request.json.get('s3_key')
+        upload_id = request.json.get('upload_id')
+        part_number = request.json.get('part_number')
+        
+        s3_client, _, _ = get_clients()
+        url = generate_presigned_part_url(s3_client, bucket_name, s3_key, upload_id, part_number)
+        
+        return jsonify({'url': url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/upload/multipart/complete', methods=['POST'])
+@login_required
+def multipart_complete():
+    try:
+        bucket_name = request.json.get('bucket_name')
+        s3_key = request.json.get('s3_key')
+        upload_id = request.json.get('upload_id')
+        parts = request.json.get('parts')
+        
+        s3_client, _, _ = get_clients()
+        complete_multipart_upload(s3_client, bucket_name, s3_key, upload_id, parts)
+        
+        return jsonify({'message': 'Upload complete'})
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/upload/start', methods=['POST'])

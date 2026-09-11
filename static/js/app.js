@@ -48,11 +48,11 @@ async function startUploadProcess(file) {
     document.getElementById('drop-zone').style.display = 'none';
     document.getElementById('progress-container').style.display = 'block';
     document.getElementById('upload-filename').textContent = file.name;
-    document.getElementById('status-text').textContent = 'Preparing S3 Upload...';
+    document.getElementById('status-text').textContent = 'Preparing S3 Multipart Upload...';
 
     try {
-        // 1. Prepare upload
-        const prepareRes = await fetch('/api/upload/prepare', {
+        // 1. Create Multipart Upload
+        const prepareRes = await fetch('/api/upload/multipart/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -61,14 +61,31 @@ async function startUploadProcess(file) {
             body: JSON.stringify({ filename: file.name })
         });
         
-        if (!prepareRes.ok) throw new Error('Failed to prepare upload');
+        if (!prepareRes.ok) throw new Error('Failed to create multipart upload');
         const prepareData = await prepareRes.json();
         
-        // 2. Direct S3 Upload
-        document.getElementById('status-text').textContent = 'Uploading to S3 directly (this might take a while)...';
-        await uploadToS3(file, prepareData.presigned_data);
+        // 2. Upload Chunks
+        document.getElementById('status-text').textContent = 'Uploading to S3 (Multipart)...';
+        const parts = await uploadChunks(file, prepareData);
         
-        // 3. Start AWS Import Task
+        // 3. Complete Multipart Upload
+        document.getElementById('status-text').textContent = 'Finalizing Upload on S3...';
+        const completeRes = await fetch('/api/upload/multipart/complete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                upload_id: prepareData.upload_id,
+                s3_key: prepareData.s3_key,
+                bucket_name: prepareData.bucket_name,
+                parts: parts
+            })
+        });
+        if (!completeRes.ok) throw new Error('Failed to complete upload');
+        
+        // 4. Start AWS Import Task
         document.getElementById('status-text').textContent = 'Starting AMI Import...';
         const startRes = await fetch('/api/upload/start', {
             method: 'POST',
@@ -85,7 +102,7 @@ async function startUploadProcess(file) {
         
         if (!startRes.ok) throw new Error('Failed to start import task');
         
-        // 4. Poll status
+        // 5. Poll status
         pollStatus(prepareData.task_id);
         
     } catch (err) {
@@ -95,40 +112,79 @@ async function startUploadProcess(file) {
     }
 }
 
-function uploadToS3(file, presignedData) {
-    return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        
-        // Add presigned fields
-        Object.keys(presignedData.fields).forEach(key => {
-            formData.append(key, presignedData.fields[key]);
+async function uploadChunks(file, uploadContext) {
+    const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB
+    const numChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let parts = [];
+    let uploadedBytes = 0;
+
+    for (let i = 0; i < numChunks; i++) {
+        const partNumber = i + 1;
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        // Get presigned URL for this part
+        const signRes = await fetch('/api/upload/multipart/sign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                upload_id: uploadContext.upload_id,
+                s3_key: uploadContext.s3_key,
+                bucket_name: uploadContext.bucket_name,
+                part_number: partNumber
+            })
         });
-        
-        // Add file (must be last)
-        formData.append('file', file);
-        
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', presignedData.url, true);
-        
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 100);
+        if (!signRes.ok) throw new Error(`Failed to sign chunk ${partNumber}`);
+        const { url } = await signRes.json();
+
+        // Upload chunk
+        const etag = await uploadChunk(url, chunk, (progress) => {
+            if (progress.lengthComputable) {
+                const totalUploaded = uploadedBytes + progress.loaded;
+                const percent = Math.round((totalUploaded / file.size) * 100);
                 document.getElementById('progress-bar').style.width = percent + '%';
                 document.getElementById('progress-percent').textContent = percent + '%';
             }
-        };
-        
+        });
+
+        uploadedBytes += chunk.size;
+        parts.push({ PartNumber: partNumber, ETag: etag });
+    }
+    return parts;
+}
+
+function uploadChunk(url, chunk, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+
+        xhr.upload.onprogress = onProgress;
+
         xhr.onload = () => {
-            if (xhr.status === 204 || xhr.status === 200) {
-                resolve();
+            if (xhr.status === 200) {
+                const etag = xhr.getResponseHeader('ETag');
+                resolve(etag);
             } else {
-                reject(new Error(`S3 Upload failed with status ${xhr.status}`));
+                let errorMsg = `Chunk upload failed with status ${xhr.status}`;
+                if (xhr.responseText) {
+                    try {
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(xhr.responseText, "text/xml");
+                        const code = xmlDoc.getElementsByTagName("Code")[0]?.childNodes[0]?.nodeValue;
+                        const message = xmlDoc.getElementsByTagName("Message")[0]?.childNodes[0]?.nodeValue;
+                        if (code && message) errorMsg += ` - ${code}: ${message}`;
+                    } catch (e) {}
+                }
+                reject(new Error(errorMsg));
             }
         };
-        
-        xhr.onerror = () => reject(new Error('S3 Upload network error'));
-        
-        xhr.send(formData);
+
+        xhr.onerror = () => reject(new Error('Network error during chunk upload'));
+        xhr.send(chunk);
     });
 }
 

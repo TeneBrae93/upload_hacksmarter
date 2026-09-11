@@ -53,9 +53,34 @@ def generate_presigned_post(s3_client, bucket_name, object_name):
         Conditions=[
             ["starts-with", "$key", ""]
         ],
-        ExpiresIn=3600
+        ExpiresIn=43200
     )
     return response
+
+def create_multipart_upload(s3_client, bucket_name, object_name):
+    response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name)
+    return response['UploadId']
+
+def generate_presigned_part_url(s3_client, bucket_name, object_name, upload_id, part_number):
+    url = s3_client.generate_presigned_url(
+        ClientMethod='upload_part',
+        Params={
+            'Bucket': bucket_name,
+            'Key': object_name,
+            'UploadId': upload_id,
+            'PartNumber': part_number
+        },
+        ExpiresIn=43200
+    )
+    return url
+
+def complete_multipart_upload(s3_client, bucket_name, object_name, upload_id, parts):
+    s3_client.complete_multipart_upload(
+        Bucket=bucket_name,
+        Key=object_name,
+        UploadId=upload_id,
+        MultipartUpload={'Parts': parts}
+    )
 
 def create_iam_role_and_policy(iam_client, s3_bucket):
     print("[*] Configuring IAM roles and permissions...")
