@@ -10,9 +10,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
-    <div class="promo-banner">
-        Join "All Access" for unlimited access to all labs, courses, ranges, and more!
-    </div>
     {% if current_user.is_authenticated and current_user.mfa_enabled %}
     <nav>
         <h1>Hack Smarter</h1>
