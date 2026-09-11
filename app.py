@@ -23,6 +23,7 @@ from aws_utils import (
     create_multipart_upload, generate_presigned_part_url, complete_multipart_upload,
     delete_upload_resources
 )
+from security_utils import is_password_pwned
 
 load_dotenv()
 
@@ -126,8 +127,10 @@ def change_password():
         
         if not new_password or new_password != confirm_password:
             flash('Passwords do not match', 'danger')
-        elif len(new_password) < 8:
-            flash('Password must be at least 8 characters long', 'danger')
+        elif len(new_password) < 8 or len(new_password) > 64:
+            flash('Password must be between 8 and 64 characters long', 'danger')
+        elif is_password_pwned(new_password):
+            flash('This password has appeared in a known data breach. Please choose a different one.', 'danger')
         else:
             user.password_hash = generate_password_hash(new_password)
             user.must_change_password = False
@@ -158,8 +161,10 @@ def update_password():
             flash('Incorrect current password.', 'danger')
         elif not new_password or new_password != confirm_password:
             flash('New passwords do not match.', 'danger')
-        elif len(new_password) < 8:
-            flash('New password must be at least 8 characters long.', 'danger')
+        elif len(new_password) < 8 or len(new_password) > 64:
+            flash('New password must be between 8 and 64 characters long.', 'danger')
+        elif is_password_pwned(new_password):
+            flash('This password has appeared in a known data breach. Please choose a different one.', 'danger')
         elif not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token.strip(), valid_window=1):
             flash('Invalid MFA code.', 'danger')
         else:
@@ -285,6 +290,10 @@ def create_user():
     
     if User.query.filter_by(username=username).first():
         flash('Username already exists', 'danger')
+    elif len(password) < 8 or len(password) > 64:
+        flash('Password must be between 8 and 64 characters long', 'danger')
+    elif is_password_pwned(password):
+        flash('This password has appeared in a known data breach. Please choose a different one.', 'danger')
     else:
         new_user = User(
             username=username,
