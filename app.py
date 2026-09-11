@@ -20,7 +20,8 @@ from aws_utils import (
     get_clients, create_temp_bucket, generate_presigned_post,
     create_iam_role_and_policy, start_import_task, check_import_status,
     share_resources, cleanup_bucket,
-    create_multipart_upload, generate_presigned_part_url, complete_multipart_upload
+    create_multipart_upload, generate_presigned_part_url, complete_multipart_upload,
+    delete_upload_resources
 )
 
 load_dotenv()
@@ -300,6 +301,7 @@ def create_user():
 
 @app.route('/api/upload/multipart/create', methods=['POST'])
 @login_required
+@limiter.exempt
 def multipart_create():
     try:
         filename = secure_filename(request.json.get('filename'))
@@ -332,6 +334,7 @@ def multipart_create():
 
 @app.route('/api/upload/multipart/sign', methods=['POST'])
 @login_required
+@limiter.exempt
 def multipart_sign():
     try:
         bucket_name = request.json.get('bucket_name')
@@ -348,6 +351,7 @@ def multipart_sign():
 
 @app.route('/api/upload/multipart/complete', methods=['POST'])
 @login_required
+@limiter.exempt
 def multipart_complete():
     try:
         bucket_name = request.json.get('bucket_name')
@@ -364,6 +368,7 @@ def multipart_complete():
 
 @app.route('/api/upload/start', methods=['POST'])
 @login_required
+@limiter.exempt
 def start_import():
     try:
         task_id = request.json.get('task_id')
@@ -395,6 +400,7 @@ def start_import():
 
 @app.route('/api/upload/status/<int:task_id>', methods=['GET'])
 @login_required
+@limiter.exempt
 def upload_status(task_id):
     task = UploadTask.query.get(task_id)
     if not task or (task.user_id != current_user.id and not current_user.is_admin):
@@ -449,6 +455,26 @@ def upload_status(task_id):
         })
     except Exception as e:
         print(f"Error checking status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/upload/<int:task_id>', methods=['DELETE'])
+@login_required
+@limiter.exempt
+def delete_upload(task_id):
+    task = UploadTask.query.get(task_id)
+    if not task or (task.user_id != current_user.id and not current_user.is_admin):
+        return jsonify({'error': 'Not found'}), 404
+        
+    try:
+        s3_client, _, ec2_client = get_clients()
+        delete_upload_resources(s3_client, ec2_client, task.s3_bucket, task.ami_id)
+        
+        db.session.delete(task)
+        db.session.commit()
+        
+        return jsonify({'message': 'Upload deleted'})
+    except Exception as e:
+        print(f"Error deleting upload: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

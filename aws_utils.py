@@ -156,3 +156,31 @@ def cleanup_bucket(s3_client, bucket_name, s3_key):
         s3_client.delete_bucket(Bucket=bucket_name)
     except Exception as e:
         print(f"Error cleaning up bucket: {e}")
+
+def delete_upload_resources(s3_client, ec2_client, bucket_name, ami_id):
+    if ami_id:
+        try:
+            image_info = ec2_client.describe_images(ImageIds=[ami_id]).get('Images', [])
+            if image_info:
+                print(f"[*] Deregistering AMI {ami_id}...")
+                ec2_client.deregister_image(ImageId=ami_id)
+                for device in image_info[0].get('BlockDeviceMappings', []):
+                    if 'Ebs' in device and 'SnapshotId' in device['Ebs']:
+                        snapshot_id = device['Ebs']['SnapshotId']
+                        print(f"[*] Deleting Snapshot {snapshot_id}...")
+                        try:
+                            ec2_client.delete_snapshot(SnapshotId=snapshot_id)
+                        except Exception as e:
+                            print(f"Error deleting snapshot {snapshot_id}: {e}")
+        except Exception as e:
+            print(f"Error deregistering AMI {ami_id}: {e}")
+            
+    if bucket_name:
+        try:
+            objs = s3_client.list_objects_v2(Bucket=bucket_name)
+            for obj in objs.get('Contents', []):
+                s3_client.delete_object(Bucket=bucket_name, Key=obj['Key'])
+            s3_client.delete_bucket(Bucket=bucket_name)
+            print(f"[*] Deleted temporary bucket {bucket_name}")
+        except Exception as e:
+            pass

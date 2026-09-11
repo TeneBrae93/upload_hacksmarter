@@ -33,19 +33,25 @@
                     <th>Date</th>
                     <th>Status</th>
                     <th>AMI ID</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for upload in uploads %}
-                <tr>
+                <tr id="upload-row-{{ upload.id }}">
                     <td>{{ upload.filename }}</td>
                     <td>{{ upload.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td><span class="badge {{ upload.status }}">{{ upload.status|capitalize }}</span></td>
                     <td>{{ upload.ami_id if upload.ami_id else '-' }}</td>
+                    <td>
+                        <button class="btn" style="background-color: var(--danger); padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="deleteUpload({{ upload.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="text-center" style="color: var(--text-secondary);">No uploads found.</td>
+                    <td colspan="5" class="text-center" style="color: var(--text-secondary);">No uploads found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
