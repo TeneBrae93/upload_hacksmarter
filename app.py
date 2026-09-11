@@ -142,6 +142,32 @@ def change_password():
                 
     return render_template('change_password.html')
 
+@app.route('/update_password', methods=['GET', 'POST'])
+@login_required
+@limiter.limit("5 per minute")
+def update_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        mfa_token = request.form.get('mfa_token')
+        
+        if not check_password_hash(current_user.password_hash, current_password):
+            flash('Incorrect current password.', 'danger')
+        elif not new_password or new_password != confirm_password:
+            flash('New passwords do not match.', 'danger')
+        elif len(new_password) < 8:
+            flash('New password must be at least 8 characters long.', 'danger')
+        elif not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token):
+            flash('Invalid MFA code.', 'danger')
+        else:
+            current_user.password_hash = generate_password_hash(new_password)
+            db.session.commit()
+            flash('Your password has been securely updated.', 'success')
+            return redirect(url_for('dashboard'))
+            
+    return render_template('update_password.html')
+
 @app.route('/setup_mfa', methods=['GET', 'POST'])
 def setup_mfa():
     from flask import session

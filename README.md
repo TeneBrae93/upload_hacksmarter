@@ -1,0 +1,55 @@
+# Hack Smarter OVA to AMI Uploader
+
+This web application facilitates the upload of Virtual Machine OVA files directly to Amazon S3 and automates their conversion into Amazon EC2 AMIs using the AWS VM Import/Export service. It is designed to handle multi-gigabyte file uploads securely and reliably.
+
+## Architecture
+
+The application leverages a direct-to-S3 upload mechanism. Instead of routing massive OVA files through the web server, the backend generates a presigned S3 POST URL. The client's browser uploads the file directly to S3 using this presigned URL, bypassing server-side file size limits and preventing timeouts. Once the upload is complete, the backend orchestrates the AWS VM Import process and shares the resulting AMI with the designated target AWS account.
+
+## Requirements
+
+- Ubuntu 22.04 or 24.04 (Recommended)
+- Root access
+- AWS Access Key and Secret Key with permissions to manage S3, IAM roles, and EC2 Image Imports
+- A target AWS Account ID to share the generated AMIs with. Note: By default, this is hardcoded to target the CourseStack AWS account.
+
+## Installation
+
+The application includes an automated deployment script. The script installs all necessary system packages, configures a Python virtual environment, sets up a systemd service running Gunicorn, and configures Nginx as a reverse proxy.
+
+1. Clone or download this repository to the target server.
+2. Execute the installation script as root:
+   ```bash
+   sudo ./install.sh
+   ```
+3. The script will prompt you for your AWS credentials, administrative user credentials, and an optional domain name. 
+4. If a domain name is provided and DNS is properly configured, the script can automatically provision an SSL/TLS certificate via Certbot (Let's Encrypt).
+
+## Updating
+
+To pull the latest code changes and apply them without disrupting your existing database or environment configuration, run the update script from the repository directory:
+
+```bash
+sudo ./update.sh
+```
+
+## Uninstallation
+
+To completely remove the application, service files, and Nginx configurations from the server, execute:
+
+```bash
+sudo ./uninstall.sh
+```
+*Note: This will not remove system packages installed by `apt-get` during the initial setup.*
+
+## Security Features
+
+- **Multi-Factor Authentication (MFA)**: Enforced via Time-based One-Time Passwords (TOTP).
+- **Insecure Direct Object Reference (IDOR) Protection**: File and task status endpoints enforce rigid ownership checks.
+- **CSRF Protection**: Implemented across all state-changing endpoints.
+- **Rate Limiting**: Applied to login and MFA verification endpoints to mitigate brute-force attempts.
+- **Password Policies**: Requires initial password resets for all provisioned users.
+
+## Disclosure
+
+This codebase was developed in collaboration with Google Antigravity, an advanced agentic coding assistant.
