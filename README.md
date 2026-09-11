@@ -2,6 +2,8 @@
 
 This web application facilitates the upload of Virtual Machine OVA files directly to Amazon S3 and automates their conversion into Amazon EC2 AMIs using the AWS VM Import/Export service. It is designed to handle multi-gigabyte file uploads securely and reliably.
 
+<img width="1642" height="736" alt="image" src="https://github.com/user-attachments/assets/86792f9d-22e0-411b-9451-d00cbcd41634" />
+
 ## Architecture
 
 The application leverages a robust **S3 Multipart Upload** architecture to handle virtually unlimited file sizes (bypassing the strict 5GB limit imposed by standard S3 PUT requests).
