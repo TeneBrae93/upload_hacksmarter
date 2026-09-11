@@ -13,7 +13,7 @@ from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from models import db, User, UploadTask
 from aws_utils import (
@@ -54,7 +54,10 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+    except OperationalError:
+        pass  # Another worker is already creating the tables
     # Create default Admin user if it doesn't exist and env vars are set
     admin_user = os.environ.get('ADMIN_USERNAME')
     admin_pass = os.environ.get('ADMIN_PASSWORD')
