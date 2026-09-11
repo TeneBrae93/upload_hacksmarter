@@ -54,7 +54,8 @@ sudo ./uninstall.sh
 - **Insecure Direct Object Reference (IDOR) Protection**: All backend API endpoints handling file deletion or status checks enforce rigid ownership checks against the authenticated session.
 - **CSRF Protection**: Flask-WTF CSRF tokens are cryptographically required across all state-changing endpoints and internal API calls.
 - **Rate Limiting**: Strict rate limiting (e.g., 200/day, 50/hour) is applied globally, with even tighter restrictions on authentication endpoints to mitigate brute-force attempts. Internal multipart upload endpoints are explicitly exempt to allow massive file chunk streams.
-- **Password Policies**: Requires initial password resets for all newly provisioned users before they can access the application.
+- **Password Policies**: Requires initial password resets for all newly provisioned users. Passwords strictly adhere to NIST SP 800-63B guidelines (minimum 8 characters, maximum 64 characters, avoiding arbitrary complexity rules).
+- **Breached Password Protection**: Integrates with the HaveIBeenPwned API to block the use of compromised passwords across all password creation forms. This is implemented via the cryptographic k-Anonymity model, transmitting only the first 5 characters of the password's SHA-1 hash to ensure complete privacy.
 
 ## Disclosure
 
