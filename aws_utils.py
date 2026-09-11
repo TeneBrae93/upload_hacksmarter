@@ -39,6 +39,24 @@ def create_temp_bucket(s3_client):
         }
         s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_configuration)
         
+        # Enforce lifecycle rule to abort incomplete multipart uploads
+        lifecycle_config = {
+            'Rules': [
+                {
+                    'ID': 'AbortIncompleteMultipartUploads',
+                    'Status': 'Enabled',
+                    'Filter': {'Prefix': ''},
+                    'AbortIncompleteMultipartUpload': {
+                        'DaysAfterInitiation': 2
+                    }
+                }
+            ]
+        }
+        s3_client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name,
+            LifecycleConfiguration=lifecycle_config
+        )
+        
     except s3_client.exceptions.BucketAlreadyOwnedByYou:
         pass
         

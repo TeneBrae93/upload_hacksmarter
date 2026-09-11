@@ -57,3 +57,7 @@ sudo ./uninstall.sh
 ## Disclosure
 
 This codebase was developed in collaboration with Google Antigravity, an advanced agentic coding assistant.
+
+## Cost Management
+
+To prevent invisible AWS storage costs from accumulating due to orphaned 50MB chunks (e.g., if a user closes their laptop mid-upload), the application automatically configures an **S3 Lifecycle Rule** on the temporary buckets using Boto3. This rule is hardcoded to "abort incomplete multipart uploads" after 48 hours, ensuring that any fragmented files are automatically purged from AWS without requiring manual administrative intervention.
