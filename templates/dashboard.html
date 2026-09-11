@@ -39,7 +39,15 @@
             <tbody>
                 {% for upload in uploads %}
                 <tr id="upload-row-{{ upload.id }}">
-                    <td>{{ upload.filename }}</td>
+                    <td>
+                        {% if upload.status == 'importing' %}
+                            <a href="#" onclick="resumeTracking({{ upload.id }}, '{{ upload.filename }}'); return false;" style="color: var(--accent); font-weight: 500; text-decoration: underline;" title="Resume Tracking">
+                                <i class="fas fa-satellite-dish"></i> {{ upload.filename }}
+                            </a>
+                        {% else %}
+                            {{ upload.filename }}
+                        {% endif %}
+                    </td>
                     <td>{{ upload.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td><span class="badge {{ upload.status }}">{{ upload.status|capitalize }}</span></td>
                     <td>{{ upload.ami_id if upload.ami_id else '-' }}</td>
@@ -61,5 +69,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/app.js') }}?v=4"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=5"></script>
 {% endblock %}

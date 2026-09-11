@@ -243,3 +243,17 @@ async function deleteUpload(taskId) {
         alert('Network error while deleting upload.');
     }
 }
+
+function resumeTracking(taskId, filename) {
+    document.getElementById('drop-zone').style.display = 'none';
+    document.getElementById('progress-container').style.display = 'block';
+    document.getElementById('upload-filename').textContent = filename;
+    document.getElementById('status-text').textContent = 'Resuming AWS tracking...';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('progress-percent').textContent = '';
+    document.getElementById('progress-bar').style.background = 'var(--primary)';
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    pollStatus(taskId);
+}
