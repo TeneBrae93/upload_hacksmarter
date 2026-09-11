@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --bg-color: #0f172a;
-    --surface-color: rgba(30, 41, 59, 0.7);
-    --surface-border: rgba(255, 255, 255, 0.1);
-    --primary-color: #3b82f6;
-    --primary-hover: #2563eb;
-    --text-primary: #f8fafc;
+    --bg-color: #080c16;
+    --surface-color: #0f1423;
+    --surface-border: #1e293b;
+    --primary-color: #8b5cf6;
+    --primary-hover: #7c3aed;
+    --text-primary: #ffffff;
     --text-secondary: #94a3b8;
     --danger: #ef4444;
     --success: #10b981;
@@ -25,21 +25,16 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background-image: 
-        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-    background-attachment: fixed;
+    display: flex;
+    flex-direction: column;
 }
 
 .glass-panel {
     background: var(--surface-color);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--surface-border);
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 .container {
@@ -49,23 +44,32 @@ body {
     width: 100%;
 }
 
+/* Promo Banner */
+.promo-banner {
+    background-color: var(--primary-color);
+    color: white;
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
 /* Nav */
 nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(10px);
+    padding: 1.5rem 2rem;
+    background: var(--bg-color);
     border-bottom: 1px solid var(--surface-border);
 }
 
 nav h1 {
     font-size: 1.5rem;
-    font-weight: 600;
-    background: linear-gradient(to right, #3b82f6, #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 nav .links a {
@@ -77,7 +81,7 @@ nav .links a {
 }
 
 nav .links a:hover {
-    color: var(--text-primary);
+    color: var(--primary-color);
 }
 
 /* Forms */
@@ -113,27 +117,36 @@ input[type="password"]:focus {
 
 .btn {
     display: inline-block;
-    padding: 0.75rem 1.5rem;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 1rem;
+    padding: 0.5rem 1.25rem;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--primary-color);
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-align: center;
     text-decoration: none;
 }
 
 .btn:hover {
-    background: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    background: var(--primary-color);
+    color: #ffffff;
 }
 
 .btn:active {
-    transform: translateY(0);
+    transform: scale(0.98);
+}
+
+.btn-solid {
+    background: var(--primary-color);
+    color: #ffffff;
+}
+
+.btn-solid:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
 }
 
 /* Alerts */
