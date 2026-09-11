@@ -209,8 +209,6 @@ function pollStatus(taskId) {
                 document.getElementById('status-text').textContent = `AWS Importing: ${data.aws_status || 'Processing'}`;
                 document.getElementById('progress-bar').style.width = progress + '%';
                 document.getElementById('progress-percent').textContent = progress + '%';
-                // Optional pulsating effect
-                document.getElementById('progress-bar').style.animation = 'pulse 2s infinite';
             }
             
         } catch (err) {
@@ -251,7 +249,7 @@ function resumeTracking(taskId, filename) {
     document.getElementById('status-text').textContent = 'Resuming AWS tracking...';
     document.getElementById('progress-bar').style.width = '0%';
     document.getElementById('progress-percent').textContent = '';
-    document.getElementById('progress-bar').style.background = 'var(--primary)';
+    document.getElementById('progress-bar').style.background = '';
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
