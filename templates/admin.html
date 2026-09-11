@@ -28,6 +28,7 @@
                     <th>Username</th>
                     <th>Role</th>
                     <th>MFA Enabled</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,10 +43,54 @@
                         <span class="badge pending">No</span>
                         {% endif %}
                     </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            {% if not user.is_admin %}
+                            <button type="button" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: var(--primary-color);" title="Promote to Admin" onclick="promptMfa('{{ url_for('promote_user', user_id=user.id) }}', 'Promote {{ user.username }} to Admin?');">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            {% endif %}
+                            
+                            {% if user.id != current_user.id %}
+                            <button type="button" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: var(--danger);" title="Delete User" onclick="promptMfa('{{ url_for('delete_user', user_id=user.id) }}', 'Delete {{ user.username }}? This will also delete their upload history.');">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+</div>
+
+<div id="mfaModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="glass-panel" style="max-width: 400px; width: 100%;">
+        <h3>Confirm Action</h3>
+        <p id="mfaModalMessage" style="color: var(--text-secondary); margin-bottom: 1.5rem;"></p>
+        <form id="mfaModalForm" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <label for="mfa_token">6-Digit MFA Code</label>
+                <input type="text" id="mfa_token" name="mfa_token" placeholder="000000" pattern="[0-9]{6}" required autocomplete="off">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn" style="background-color: var(--surface-border);" onclick="document.getElementById('mfaModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn" style="background-color: var(--danger);">Confirm</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function promptMfa(actionUrl, message) {
+    document.getElementById('mfaModalMessage').textContent = message;
+    document.getElementById('mfaModalForm').action = actionUrl;
+    document.getElementById('mfa_token').value = '';
+    document.getElementById('mfaModal').style.display = 'flex';
+    document.getElementById('mfa_token').focus();
+}
+</script>
 {% endblock %}

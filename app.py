@@ -297,6 +297,53 @@ def create_user():
         
     return redirect(url_for('admin'))
 
+@app.route('/admin/promote_user/<int:user_id>', methods=['POST'])
+@login_required
+def promote_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    mfa_token = request.form.get('mfa_token')
+    if not current_user.mfa_secret or not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token):
+        flash('Invalid MFA Token', 'danger')
+        return redirect(url_for('admin'))
+        
+    user = User.query.get(user_id)
+    if not user:
+        flash('User not found', 'danger')
+    else:
+        user.is_admin = True
+        db.session.commit()
+        flash(f'{user.username} is now an Admin', 'success')
+        
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    mfa_token = request.form.get('mfa_token')
+    if not current_user.mfa_secret or not pyotp.TOTP(current_user.mfa_secret).verify(mfa_token):
+        flash('Invalid MFA Token', 'danger')
+        return redirect(url_for('admin'))
+        
+    if current_user.id == user_id:
+        flash('You cannot delete yourself', 'danger')
+        return redirect(url_for('admin'))
+        
+    user = User.query.get(user_id)
+    if not user:
+        flash('User not found', 'danger')
+    else:
+        UploadTask.query.filter_by(user_id=user_id).delete()
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} deleted', 'success')
+        
+    return redirect(url_for('admin'))
+
 # --- API Routes for Upload Flow ---
 
 @app.route('/api/upload/multipart/create', methods=['POST'])
