@@ -46,11 +46,13 @@ sudo ./uninstall.sh
 
 ## Security Features
 
-- **Multi-Factor Authentication (MFA)**: Enforced via Time-based One-Time Passwords (TOTP).
-- **Insecure Direct Object Reference (IDOR) Protection**: File and task status endpoints enforce rigid ownership checks.
-- **CSRF Protection**: Implemented across all state-changing endpoints.
-- **Rate Limiting**: Applied to login and MFA verification endpoints to mitigate brute-force attempts.
-- **Password Policies**: Requires initial password resets for all provisioned users.
+- **Role-Based Access Control (RBAC)**: Two distinct roles are enforced—**User** and **Admin**. Users are strictly isolated to viewing and managing only their own OVA uploads. Admins have global visibility over all tasks and exclusive access to the Admin Panel for user lifecycle management.
+- **Multi-Factor Authentication (MFA)**: Enforced globally via Time-based One-Time Passwords (TOTP). Furthermore, high-risk administrative actions (e.g., promoting a user to Admin, deleting an account) and account settings (e.g., updating passwords) require re-verification of the MFA token with a strict timestamp window to protect against session hijacking.
+- **Injection Attack Defenses (SSTI & XSS)**: The frontend templates utilize Jinja2 with strict HTML auto-escaping enabled by default, rendering the application immune to Server-Side Template Injection (SSTI) and Cross-Site Scripting (XSS). User inputs and uploaded filenames are strictly sanitized via Werkzeug's `secure_filename()` before any processing.
+- **Insecure Direct Object Reference (IDOR) Protection**: All backend API endpoints handling file deletion or status checks enforce rigid ownership checks against the authenticated session.
+- **CSRF Protection**: Flask-WTF CSRF tokens are cryptographically required across all state-changing endpoints and internal API calls.
+- **Rate Limiting**: Strict rate limiting (e.g., 200/day, 50/hour) is applied globally, with even tighter restrictions on authentication endpoints to mitigate brute-force attempts. Internal multipart upload endpoints are explicitly exempt to allow massive file chunk streams.
+- **Password Policies**: Requires initial password resets for all newly provisioned users before they can access the application.
 
 ## Disclosure
 
