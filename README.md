@@ -4,7 +4,9 @@ This web application facilitates the upload of Virtual Machine OVA files directl
 
 ## Architecture
 
-The application leverages a direct-to-S3 upload mechanism. Instead of routing massive OVA files through the web server, the backend generates a presigned S3 POST URL. The client's browser uploads the file directly to S3 using this presigned URL, bypassing server-side file size limits and preventing timeouts. Once the upload is complete, the backend orchestrates the AWS VM Import process and shares the resulting AMI with the designated target AWS account.
+The application leverages a robust **S3 Multipart Upload** architecture to handle virtually unlimited file sizes (bypassing the strict 5GB limit imposed by standard S3 PUT requests).
+
+Instead of routing massive OVA files through the web server, the client's browser uses vanilla Javascript to mathematically slice the file into 50MB chunks. The Python backend securely generates a presigned S3 URL for *each* specific chunk. The browser uploads these chunks directly to AWS, bypassing server-side memory limits and bandwidth bottlenecks. Once all chunks are uploaded, AWS natively re-assembles them into the original massive OVA file. Finally, the backend orchestrates the AWS VM Import process and shares the resulting AMI with the designated target AWS account.
 
 ## Requirements
 
